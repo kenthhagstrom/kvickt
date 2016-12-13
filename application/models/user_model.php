@@ -17,6 +17,27 @@ class User_Model extends Model {
 		return $this->db->select( 'SELECT * FROM user WHERE id=:userid', array( ':userid' => $id ) );
 	}
 
+	function activate_account( $code ) {
+
+		$sql = 'SELECT id, user_id FROM status WHERE code=:code AND active=0';
+		$sth = $this->db->prepare( $sql );
+		$sth->bindValue( ':code', $code, PDO::PARAM_STR );
+		$sth->execute();
+		$data = $sth->fetchAll( PDO::FETCH_ASSOC );
+
+		if ( count( $data ) > 0 ) {
+			$user_id = $data[0]['user_id'];
+		} else {
+			return false;
+		}
+
+		$sql = 'UPDATE status SET active=1 WHERE user_id=:id';
+		$sth = $this->db->prepare( $sql );
+		$sth->bindValue( ':id', $user_id, PDO::PARAM_INT );
+		$sth->execute();
+		return true;
+	}
+
 	function authenticate() {
 
 		$errors = [];
@@ -110,16 +131,16 @@ class User_Model extends Model {
 		return true;
 	}
 
-	private function is_email_registered( $email ) {
+	private function is_email_available( $email ) {
 		$sql = 'SELECT email FROM user WHERE email=:email';
 		$sth = $this->db->prepare( $sql );
-		$sth->bindValue( ':email', $_POST['email'], PDO::PARAM_STR );
+		$sth->bindValue( ':email', $_POST['email'] );
 		$sth->execute();
 		$row_count = count( $sth->fetchAll( PDO::FETCH_ASSOC ) );
 		if ( $row_count > 0 ) {
-			return false;
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	function register() {
@@ -157,9 +178,9 @@ class User_Model extends Model {
 		}
 
 		// Check if email has already been registered
-		if ( $this->is_email_registered( $_POST['email'] ) ) {
-			$errors['errors']['email'] = 'This email address has already been registered, try logging in instead.';
-		}
+		//if ( false == $this->is_email_available( $_POST['email'] ) ) {
+		//	$errors['errors']['email'] = 'This email address has already been registered, try logging in instead.';
+		//}
 
 		$form['email'] = filter_var( $_POST['email'], FILTER_SANITIZE_STRING );
 
@@ -179,12 +200,25 @@ class User_Model extends Model {
 			$this->redirect->to( 'user', 'register' );
 		} else {
 			$hashed_password = $this->hash->make( $_POST['password'] );
-			$sth = $this->db->prepare( 'INSERT INTO user (username,email,password,code) VALUES (:username,:email,:password,:code)' );
+			$activation_code = bin2hex( random_bytes(3) );
+
+			$sth = $this->db->prepare( 'INSERT INTO user (username,email,password) VALUES (:username,:email,:password)' );
 			$sth->bindValue( ":username", $_POST['username'], PDO::PARAM_STR );
 			$sth->bindValue( ":email", $_POST['email'], PDO::PARAM_STR );
 			$sth->bindValue( ":password", $hashed_password, PDO::PARAM_STR );
-			$sth->bindValue( ":code", bin2hex( random_bytes(3) ), PDO::PARAM_STR );
 			$sth->execute();
+
+			$user_id = $this->db->lastInsertId();
+
+			$sth = $this->db->prepare( 'INSERT INTO status (code,user_id) VALUES (:code,:user_id)' );
+			$sth->bindValue( ":code", $activation_code, PDO::PARAM_STR );
+			$sth->bindValue( ":user_id", $user_id, PDO::PARAM_INT );
+			$sth->execute();
+
+			$msg = "Go to <a href='".SITE_URL."user/activate/'>Our Awesome Website</a> and enter your activation code to ativate your accont. Your code is: $activation_code";
+			if( mail( $_POST['email'], 'Activate your account', $msg ) ) {
+				// email with activation code has been sent
+			}
 			Session::delete('token');
 			$this->redirect->to( 'user', 'activate' );
 		}

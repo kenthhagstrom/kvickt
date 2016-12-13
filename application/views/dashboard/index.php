@@ -3,7 +3,7 @@
 <ul>
 	<li><a href="../">Main Page</a></li>
 	<li>Dashboard</li>
-	<li><a href="../user/logout">Logout</a></li>
+	<li><a href="<?php echo SITE_URL; ?>user/logout">Logout</a></li>
 </ul>
 
 <h1>Dashboard</h1>
