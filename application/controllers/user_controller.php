@@ -7,11 +7,27 @@ class User_Controller extends Controller {
 
 		$this->model = new User_Model();
 
+		$this->auth = new Auth;
+		$this->redirect = new Redirect;
+
 		$this->view->loggedin = Session::get('logged_in');
 		$this->view->title = 'User Controller';
 	}
 
 	function activate() {
+
+		// If the user is already logged in there is no need to activate an account
+		if( true === $this->auth->ok() ) {
+			$this->redirect->to( 'user' ); // TODO Redirect elsewhere?
+		}
+
+		// Has the form been sent or not
+		if( count( $_POST ) > 0 ) {
+			if ( true == $this->model->activate_account( $_POST['code'] ) ) {
+				// TODO Display message or redirect to login?
+				$this->redirect->to( 'user', 'login' );
+			}
+		}
 		$this->view->render('user/activate' );
 	}
 
@@ -23,7 +39,11 @@ class User_Controller extends Controller {
 		if ( count( $_POST ) > 0 ) {
 			$this->model->authenticate();
 		} else {
-			$this->view->title = 'Log in to your account';
+			if( true === $this->auth->ok() ) {
+				$this->view->title = 'Logged in';
+			} else {
+				$this->view->title = 'Log in to your account';
+			}
 			$this->view->render('user/index' );
 		}
 	}
