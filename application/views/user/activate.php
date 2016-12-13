@@ -1,2 +1,5 @@
-form used for account activation here
-<?php // TODO FIXME add an actual form ?> 
+<?php $this->render('template/header'); ?>
+
+<?php $this->render('form/activate'); ?>
+
+<?php $this->render('template/footer'); ?>
