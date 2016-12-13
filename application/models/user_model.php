@@ -98,6 +98,30 @@ class User_Model extends Model {
 		$this->db->delete( 'user', "id='$id'");
 	}
 
+	private function is_username_available( $username ) {
+		$sql = 'SELECT username FROM user WHERE username=:username';
+		$sth = $this->db->prepare( $sql );
+		$sth->bindValue( ':username', $username, PDO::PARAM_STR );
+		$sth->execute();
+		$row_count = count( $sth->fetchAll( PDO::FETCH_ASSOC ) );
+		if ( $row_count > 0 ) {
+			return false;
+		}
+		return true;
+	}
+
+	private function is_email_registered( $email ) {
+		$sql = 'SELECT email FROM user WHERE email=:email';
+		$sth = $this->db->prepare( $sql );
+		$sth->bindValue( ':email', $_POST['email'], PDO::PARAM_STR );
+		$sth->execute();
+		$row_count = count( $sth->fetchAll( PDO::FETCH_ASSOC ) );
+		if ( $row_count > 0 ) {
+			return false;
+		}
+		return true;
+	}
+
 	function register() {
 
 		$errors = [];
@@ -116,12 +140,7 @@ class User_Model extends Model {
 		}
 
 		// Check if username is available
-		$sql = 'SELECT username FROM user WHERE username=:username';
-		$sth = $this->db->prepare( $sql );
-		$sth->bindValue( ':username', $_POST['username'], PDO::PARAM_STR );
-		$sth->execute();
-		$row_count = count( $sth->fetchAll( PDO::FETCH_ASSOC ) );
-		if ( $row_count > 0 ) {
+		if( false === $this->is_username_available( $_POST['username']) ) {
 			$errors['errors']['username'] = 'Username has already been taken, sorry.';
 		}
 
@@ -138,12 +157,7 @@ class User_Model extends Model {
 		}
 
 		// Check if email has already been registered
-		$sql = 'SELECT email FROM user WHERE email=:email';
-		$sth = $this->db->prepare( $sql );
-		$sth->bindValue( ':email', $_POST['email'], PDO::PARAM_STR );
-		$sth->execute();
-		$row_count = count( $sth->fetchAll( PDO::FETCH_ASSOC ) );
-		if ( $row_count > 0 ) {
+		if ( $this->is_email_registered( $_POST['email'] ) ) {
 			$errors['errors']['email'] = 'This email address has already been registered, try logging in instead.';
 		}
 
