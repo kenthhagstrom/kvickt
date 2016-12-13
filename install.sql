@@ -5,10 +5,11 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# V�rd: localhost (MySQL 5.5.42)
+# Värd: localhost (MySQL 5.5.42)
 # Databas: test
-# Genereringstid: 2016-12-12 18:34:05 +0000
+# Genereringstid: 2016-12-13 14:04:06 +0000
 # ************************************************************
+
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -18,35 +19,61 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+
+# Tabelldump status
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `status`;
+
+CREATE TABLE `status` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `code` varchar(6) NOT NULL DEFAULT '' COMMENT 'Account activation code.',
+  `user_id` int(11) unsigned NOT NULL,
+  `active` tinyint(1) unsigned DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+LOCK TABLES `status` WRITE;
+/*!40000 ALTER TABLE `status` DISABLE KEYS */;
+
+INSERT INTO `status` (`id`, `code`, `user_id`, `active`)
+VALUES
+	(1,'abc123',1,1),
+	(4,'8778dd',18,1);
+
+/*!40000 ALTER TABLE `status` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
 # Tabelldump user
 # ------------------------------------------------------------
 
 DROP TABLE IF EXISTS `user`;
 
 CREATE TABLE `user` (
-  `id` int(15) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(255) NOT NULL DEFAULT '',
   `password` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL DEFAULT '',
   `name` varchar(255) NOT NULL,
-  `active` tinyint(1) unsigned DEFAULT '0',
-  `code` varchar(6) DEFAULT NULL COMMENT 'Account activation code.',
+  `activity` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
 
-INSERT INTO `user` (`id`, `username`, `password`, `email`, `name`, `active`, `code`)
+INSERT INTO `user` (`id`, `username`, `password`, `email`, `name`, `activity`)
 VALUES
-	(1,'kalle','$2y$10$c4JYh.najxW9XLMHXLLLj.cTvcGlKrbqgYD.VyrCZniFAqJzqpJ0y','keha1976@gmail.com','Admin Steve',NULL,'owner'),
-	(2,'','','test@example.com','Aron Author',NULL,NULL),
-	(3,'','','joe@example.com','Joe User',NULL,NULL),
-	(4,'','','penny@example.com','Penny Premium',NULL,NULL),
-	(5,'anka','$2y$10$h72/dDJH.ypqiC4jIul24.tZ0UMwKYsT7CwLy8eI.sHSRlT08LK8q','anka@example.com','',0,NULL),
-	(6,'panda','$2y$10$88eGE0eqxRk7we0bNVrEBuPX6UJoJOIqeH7hYiTBfOpZOCTHPRA5q','panda@example.com','',0,NULL),
-	(9,'arne','$2y$10$Dm6hQGKLEkjmTq7S0QTd1ulpAlvWt0Q3c56uxh5ZPUPQg4MY3waWm','arne@example.com','',0,'e0362b'),
-	(11,'knasboll','$2y$10$RgSE.dkpj5V43fuLyddTVOnD1QRkH0zCw4TxEikpG5AoH8tFanJ.y','info@kenthhagstrom.se','',0,'2f7534');
+	(1,'kalle','$2y$10$c4JYh.najxW9XLMHXLLLj.cTvcGlKrbqgYD.VyrCZniFAqJzqpJ0y','','Admin Steve','2016-12-13 13:08:59'),
+	(2,'','','test@example.com','Aron Author',NULL),
+	(3,'','','joe@example.com','Joe User',NULL),
+	(4,'','','penny@example.com','Penny Premium',NULL),
+	(5,'anka','$2y$10$h72/dDJH.ypqiC4jIul24.tZ0UMwKYsT7CwLy8eI.sHSRlT08LK8q','anka@example.com','',NULL),
+	(6,'panda','$2y$10$88eGE0eqxRk7we0bNVrEBuPX6UJoJOIqeH7hYiTBfOpZOCTHPRA5q','panda@example.com','',NULL),
+	(9,'arne','$2y$10$Dm6hQGKLEkjmTq7S0QTd1ulpAlvWt0Q3c56uxh5ZPUPQg4MY3waWm','arne@example.com','',NULL),
+	(11,'knasboll','$2y$10$RgSE.dkpj5V43fuLyddTVOnD1QRkH0zCw4TxEikpG5AoH8tFanJ.y','knasboll@example.com','',NULL),
+	(18,'keha76','$2y$10$N5JaJcUUQi9H0l9odpvsLO18oQ8QIGYvyl2YxYwUZXhPrOneA/GOS','keha76@example.com','',NULL);
 
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
