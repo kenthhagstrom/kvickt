@@ -32,13 +32,6 @@ class Autoload {
 			include APP_PATH . 'models' . DS . $class_name . EXT;
 		}
 	}
-
-	static function load_libs( $class_name ) {
-		$class_name = strtolower( $class_name );
-		if ( file_exists( APP_PATH . 'library' . DS . $class_name . EXT ) ) {
-			include APP_PATH . 'library' . DS . $class_name . EXT;
-		}
-	}
 }
 
 /**
@@ -50,4 +43,3 @@ class Autoload {
 spl_autoload_register( ['Autoload', 'load_class'] );
 spl_autoload_register( ['Autoload', 'load_controller'] );
 spl_autoload_register( ['Autoload', 'load_model'] );
-spl_autoload_register( ['Autoload', 'load_libs'] );

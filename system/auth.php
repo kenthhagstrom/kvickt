@@ -17,11 +17,12 @@ class Auth {
 	}
 
 	public function approve( $user_id ) {
-		$id = (int)$user_id;
+		$user_id = (int)$user_id;
 		$user_agent_hash = $this->hash->make( $_SERVER['HTTP_USER_AGENT'] );
 		Session::set( 'user_agent', $user_agent_hash );
 		Session::set( 'logged_in', true );
-		Session::set( 'user_id', $id );
+		Session::set( 'user_id', $user_id );
+
 	}
 
 	public function revoke() {

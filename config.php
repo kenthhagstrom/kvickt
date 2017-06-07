@@ -16,6 +16,7 @@ define( 'DB_HOST', 'localhost' );
 define( 'DB_NAME', 'test' );
 define( 'DB_USER', 'test' );
 define( 'DB_PASS', 'k0k0fj0ng' );
+define( 'DB_CHAR', 'utf8' );
 
 // Site
 define( 'CHARSET', 'utf8' );

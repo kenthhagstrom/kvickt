@@ -1,10 +1,6 @@
 <?php $this->render('template/header'); ?>
 
-<ul>
-	<li><a href="../">Main Page</a></li>
-	<li>Dashboard</li>
-	<li><a href="<?php echo SITE_URL; ?>user/logout">Logout</a></li>
-</ul>
+<?php $this->render('template/menu'); ?>
 
 <h1>Dashboard</h1>
 <p>When logged in, this is where you can find all your personal stuff.</p>

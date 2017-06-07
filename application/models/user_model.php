@@ -40,42 +40,49 @@ class User_Model extends Model {
 
 	function authenticate() {
 
+		// Initialize arays
 		$errors = [];
 		$form = [];
 
+		// Create new Authorize object
 		$auth = new Auth();
 
-		// Check if the user account has been activated
-		$sql = 'SELECT count(*) FROM user JOIN status ON user.id=status.user_id WHERE status.active=1';
-		$res = $this->db->query( $sql );
-		if( $res->fetchColumn() != 1 ) {
-			// Account needs to be activated, redirect
+		$query = $this->db->prepare( "SELECT id,username,password FROM user WHERE username=:username" );
+		$query->bindValue( ":username", $_POST['username'], PDO::PARAM_STR );
+		$query->execute();
+		$data = $query->fetch( PDO::FETCH_ASSOC );
+
+		// If not a s ingle row is returned, the username is invalid
+		if( $data['username'] !== $_POST['username'] ) {
+			$errors['username'] = 'There is no user with that username in our database!';
 		}
 
+		// ...username valid, set form data value
+		$form['username'] = $data['username'];
+
+		// Check password length
 		if ( strlen( $_POST['password'] ) == 0 ) {
-			$errors['password'] = 'No password entered.';
+			$errors['password'] = 'You must enter your password!';
 		}
 
-		// Get user data
-		$sth = $this->db->prepare( "SELECT id,password FROM user WHERE username=:username" );
-		$sth->bindValue( ":username", $_POST['username'], PDO::PARAM_STR );
-		$sth->execute();
-
-		$data = $sth->fetchAll( PDO::FETCH_ASSOC );
-
-		$count = count( $data );
-		if ( ( $count > 0 ) ) {
-
-			if ( false == $this->hash->verify( $_POST['password'], $data[0]['password'] ) ) {
-				$errors['password'] = 'Incorrect password.';
-			}
-
-		} else {
-
-			$errors['username'] = 'Incorrect username.';
+		// Check if password is correct
+		if ( false == $this->hash->verify( $_POST['password'], $data['password'] ) ) {
+			$errors['password'] = 'The password entered is not correct!';
 		}
 
-		$form['username'] = filter_var( $_POST['username'], FILTER_SANITIZE_STRING );
+		// Set user id
+		$user_id = (int)$data['id'];
+
+		// Check if the user account has previously has been activated
+		$query = $this->db->prepare( 'SELECT count(*) FROM user JOIN status ON user.id=status.user_id WHERE status.active=1 AND user.id=:user_id' );
+		$query->bindValue( ':user_id', $user_id, PDO::PARAM_INT );
+		$query->execute();
+		if( $query->fetchColumn() != 1 ) {
+			// Account needs to be activated, redirect
+			$errors['activation'] = 'Your account has not been activated.';
+			$this->redirect->to( 'user', 'activate' );
+		}
+
 		Session::set('errors', $errors );
 		Session::set('form', $form );
 
@@ -84,13 +91,15 @@ class User_Model extends Model {
 			$this->redirect->to( 'user', 'login' );
 		}
 
-		// All checks are passed, authenticate the user
-		$auth->approve( $data[0]['id'] );
+		// Authenticate the user
+		$auth->approve( $user_id );
 
+		// Remove temporary data
 		Session::delete('token');
 		Session::delete('errors');
 		Session::delete('form');
 
+		// Redirect user to dashboard
 		$this->redirect->to( 'dashboard' );
 	}
 
@@ -100,15 +109,31 @@ class User_Model extends Model {
 		$this->redirect->to();
 	}
 
-	function edit_save( $data ) {
+	function edit_save() {
 
-		$post = array(
-			'id' => $data['id'],
-			'username' => $data['username'],
-			'password' => $this->hash->make( $_POST['password'] )
-		);
+		$id = Session::get('user_id');
+		$id = (int)$id;
 
-		$this->db->update( 'user', $post, "`id`={$post['id']}" );
+		$errors = [];
+		$form = [];
+
+		// Username must be alphanumerical
+		if ( false === filter_var( $_POST['name'], FILTER_SANITIZE_STRING ) ) {
+			$errors['name'] = 'Name must be alphabetic.';
+		}
+		$form['name'] = filter_var( $_POST['name'], FILTER_SANITIZE_STRING );
+
+		if ( sizeof( $errors ) > 0 ) {
+			Session::set( 'errors', $errors );
+			Session::set( 'form', $form );
+			$this->redirect->to( 'user', 'edit' );
+		} else {
+
+			$post = array(
+				'name' => $_POST['name']
+			);
+			$this->db->update( 'user', $post, "`id`={$id}" );
+		}
 	}
 
 	function delete( $id ) {
@@ -143,6 +168,16 @@ class User_Model extends Model {
 		return false;
 	}
 
+	function get_userdata( $field_name ) {
+		$field = filter_var( $field_name, FILTER_SANITIZE_STRING );
+		$user_id = Session::get('user_id');
+		$sth = $this->db->prepare( "SELECT $field FROM user WHERE id=:user_id" );
+		$sth->bindValue( ":user_id", $user_id, PDO::PARAM_STR );
+		$sth->execute();
+		$data = $sth->fetch( PDO::FETCH_ASSOC );
+		return $data[$field];
+	}
+
 	function register() {
 
 		$errors = [];
@@ -162,19 +197,19 @@ class User_Model extends Model {
 
 		// Check if username is available
 		if( false === $this->is_username_available( $_POST['username']) ) {
-			$errors['errors']['username'] = 'Username has already been taken, sorry.';
+			$errors['username'] = 'Username has already been taken, sorry.';
 		}
 
 		// Username must be at least 3 characters
-		if ( count_chars( $_POST['username'] ) < 3 ) {
-			$errors['errors']['username'] = 'Username is too short, 3 characters is a minimum.';
+		if ( count_chars( $_POST['username'] ) < 3  || $_POST['username'] == '' ) {
+			$errors['username'] = 'Username is too short, 3 characters is a minimum.';
 		}
 
 		$form['username'] = filter_var( $_POST['username'], FILTER_SANITIZE_STRING );
 
 		// Email address must be valid
 		if ( false === filter_var( $_POST['email'], FILTER_VALIDATE_EMAIL ) ) {
-			$errors['errors']['email'] = 'You must enter a valid email address!';
+			$errors['email'] = 'You must enter a valid email address!';
 		}
 
 		// Check if email has already been registered
@@ -186,12 +221,12 @@ class User_Model extends Model {
 
 		// Passwords must match
 		if( $_POST['password'] !== $_POST['verify_password'] ) {
-			$errors['errors']['password'] = 'Passwords does not match.';
+			$errors['password'] = 'Passwords does not match.';
 		}
 
 		// Password can't be blank
 		if ( '' == $_POST['password'] ) {
-			$errors['errors']['password'] = 'You must specify a password for your account.';
+			$errors['password'] = 'You must specify a password for your account.';
 		}
 
 		if ( sizeof( $errors ) > 0 ) {
@@ -199,27 +234,41 @@ class User_Model extends Model {
 			Session::set( 'form', $form );
 			$this->redirect->to( 'user', 'register' );
 		} else {
+
+			// Generate password hash
 			$hashed_password = $this->hash->make( $_POST['password'] );
+
+			// Generate random activation string
 			$activation_code = bin2hex( random_bytes(3) );
 
+			// Insert user data into the database
 			$sth = $this->db->prepare( 'INSERT INTO user (username,email,password) VALUES (:username,:email,:password)' );
 			$sth->bindValue( ":username", $_POST['username'], PDO::PARAM_STR );
 			$sth->bindValue( ":email", $_POST['email'], PDO::PARAM_STR );
 			$sth->bindValue( ":password", $hashed_password, PDO::PARAM_STR );
 			$sth->execute();
 
+			// Get ID from the last row inserted
 			$user_id = $this->db->lastInsertId();
 
+			// Insert the activation code into the database table
 			$sth = $this->db->prepare( 'INSERT INTO status (code,user_id) VALUES (:code,:user_id)' );
 			$sth->bindValue( ":code", $activation_code, PDO::PARAM_STR );
 			$sth->bindValue( ":user_id", $user_id, PDO::PARAM_INT );
 			$sth->execute();
 
+			// Create and send message with activation code to the user
 			$msg = "Go to <a href='".SITE_URL."user/activate/'>Our Awesome Website</a> and enter your activation code to ativate your accont. Your code is: $activation_code";
 			if( mail( $_POST['email'], 'Activate your account', $msg ) ) {
-				// email with activation code has been sent
+				// TODO Make sending emails prettier
 			}
+
+			// Clear temporary data, in case there are any left-overs from the form sending process
 			Session::delete('token');
+			Session::delete('errors');
+			Session::delete('form');
+
+			// Redirect user to activation page
 			$this->redirect->to( 'user', 'activate' );
 		}
 	}

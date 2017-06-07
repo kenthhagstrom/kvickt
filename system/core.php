@@ -12,11 +12,25 @@
  */
 class Core {
 
+	public $start;
 	private $url = [];
 	private $controller = null;
 
 	function __construct() {
+		$time = microtime();
+		$time = explode(' ', $time);
+		$time = $time[1] + $time[0];
+		$this->start = $time;
 		Session::start();
+	}
+
+	function __destruct() {
+		$time = microtime();
+		$time = explode(' ', $time);
+		$time = $time[1] + $time[0];
+		$finish = $time;
+		$total_time = round(($finish - $this->start), 4);
+		echo 'Loading: '.$total_time.' seconds.';
 	}
 
 	function run() {
@@ -68,6 +82,11 @@ class Core {
 			}
 		}
 
+		/**
+		 * NOTE array_shift could be used to force ALL action parameters to be of the
+		 *      array type. This way the restriction on the total parameter count
+		 *      would be gone. Currently the restriction is 3 parameters.
+		 */
 		switch ( $length ) {
 			case 5:
 				$this->controller->{$this->url[1]}( $this->url[2], $this->url[3], $this->url[4] );

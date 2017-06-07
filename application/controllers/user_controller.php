@@ -35,6 +35,20 @@ class User_Controller extends Controller {
 		$this->login();
 	}
 
+	function edit() {
+		if( true === $this->auth->ok() ) {
+			$this->view->title = 'Edit Profile';
+			$this->view->name = $this->model->get_userdata('name');
+			if( count( $_POST ) > 0 ) {
+				$this->model->edit_save();
+			}
+		} else {
+			// TODO Check if user has administrator permission
+			$this->view->title = 'Edit Profile Page';
+		}
+		$this->view->render('user/edit' );
+	}
+
 	function login() {
 		if ( count( $_POST ) > 0 ) {
 			$this->model->authenticate();
